@@ -1,592 +1,170 @@
-# IBM Host On-Demand Automation - Quick Start Guide
+# Quick Start
 
-## Table of Contents
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [First-Time Setup](#first-time-setup)
-- [Your First Automation](#your-first-automation)
-- [Simple Examples](#simple-examples)
-- [Testing Your Setup](#testing-your-setup)
-- [Next Steps](#next-steps)
+This guide covers the current, reliable way to use this project: the CLI wrapper [`./hod`](../hod).
 
----
+## Requirements
 
-## Prerequisites
+- macOS
+- IBM Host On-Demand installed
+- Accessibility permissions enabled for the terminal or editor running the commands
+- An active HOD session, typically titled like `GDLVM7 - A`
 
-### System Requirements
-- **macOS**: 10.14 (Mojave) or later
-- **AppleScript**: Version 2.4 or later
-- **IBM Host On-Demand**: Installed and configured
-- **Disk Space**: 50 MB for logs and captures
+## Core Principle
 
-### Required Permissions
-1. **Accessibility Access**
-   - System Preferences > Security & Privacy > Privacy > Accessibility
-   - Add Terminal or Script Editor
+Use the tool step-by-step.
 
-2. **Automation Access**
-   - System Preferences > Security & Privacy > Privacy > Automation
-   - Allow control of System Events
+Do not chain a large number of blind actions together. The intended workflow is:
 
-### Verify Prerequisites
+1. run one command
+2. capture the screen
+3. inspect the result
+4. continue from confirmed state
 
-```applescript
--- Run this to check your setup
-tell application "System Events"
-    try
-        -- Test accessibility
-        set frontmost of process "Finder" to true
-        log "✓ Accessibility access OK"
-    on error
-        log "✗ Accessibility access needed"
-    end try
-end tell
+That is the operating model the automation was hardened around.
 
--- Check AppleScript version
-log "AppleScript version: " & (AppleScript version)
+## Main Commands
 
--- Check if HOD is installed
-tell application "System Events"
-    if exists process "HOD" then
-        log "✓ HOD is running"
-    else
-        log "⚠ HOD is not running - please start it"
-    end if
-end tell
-```
-
----
-
-## Installation
-
-### Step 1: Download the Project
+From the repository root:
 
 ```bash
-# Clone or download to your home directory
-cd ~
-# Assuming project is in ~/bobathon
-cd bobathon
+./hod activate A
+./hod capture
+./hod attn
+./hod clear
+./hod pf 3
+./hod pf 8
+./hod command "XEDIT PROFILE EXEC A"
+./hod write-file-line "SILLY" "JOKE" "A1" "I ASKED AI FOR A PUN, AND IT SAID IT WAS STILL TRAINING ITS THOUGHT PROCESSOR."
 ```
 
-### Step 2: Verify Directory Structure
+## Minimal Session Check
+
+Bring session `A` forward and capture the current screen:
 
 ```bash
-# Check that all directories exist
-ls -la ~/bobathon/
-
-# You should see:
-# - src/          (source code)
-# - docs/         (documentation)
-# - workflows/    (example workflows)
-# - logs/         (will be created automatically)
-# - config/       (configuration files)
-# - tests/        (test scripts)
+./hod activate A
+./hod capture
 ```
 
-### Step 3: Set Permissions
+If the session is healthy, capture should return readable HOD screen text rather than only the footer line.
+
+## Recovery to a Stable Prompt
+
+If XEDIT or another screen is in the way, recover first:
 
 ```bash
-# Make scripts executable
-chmod +x ~/bobathon/src/main.applescript
-chmod +x ~/bobathon/workflows/*.applescript
-chmod +x ~/bobathon/tests/*.applescript
+./hod attn
+./hod capture
 ```
 
-### Step 4: Create Log Directory
+Expected result: a stable prompt such as `Ready;`.
+
+The recovery flow is behavior-based. It does not just press keys and assume success.
+
+## Open a File in XEDIT
 
 ```bash
-# Create logs directory if it doesn't exist
-mkdir -p ~/bobathon/logs
+./hod command "XEDIT PROFILE EXEC A"
+./hod capture
 ```
 
----
+You should see the XEDIT header and file contents in the capture output.
 
-## First-Time Setup
-
-### Configure Window Title
-
-The automation needs to know your HOD window title format.
-
-**Default format:** `"GDLVM7 - A"` (hostname - session letter)
-
-**If your format is different:**
-
-```applescript
--- Edit src/core/window_manager.applescript
--- Change this line:
-property windowTitlePrefix : "GDLVM7 - "
-
--- To match your hostname:
-property windowTitlePrefix : "YOUR_HOST - "
-```
-
-### Test Window Detection
-
-```applescript
--- Run this test to verify window detection
-property windowManager : load script POSIX file "/Users/okyereboateng/bobathon/src/core/window_manager.applescript"
-
--- Find all available sessions
-set sessions to windowManager's getAllHODSessions()
-log "Found sessions: " & (sessions as string)
-
--- Test finding a specific session (replace "A" with your session)
-set windowRef to windowManager's getHODWindow("A")
-if windowRef is not missing value then
-    log "✓ Successfully found HOD window for session A"
-else
-    log "✗ Could not find HOD window - check window title format"
-end if
-```
-
-### Calibrate Screen Capture
-
-```applescript
--- Run this once to calibrate the toolbar copy button position
-property windowManager : load script POSIX file "/Users/okyereboateng/bobathon/src/core/window_manager.applescript"
-property screenCapture : load script POSIX file "/Users/okyereboateng/bobathon/src/core/screen_capture.applescript"
-
--- Get window reference
-set windowRef to windowManager's getHODWindow("A")
-
--- Calibrate button position
-set buttonPos to screenCapture's calibrateToolbarButton(windowRef)
-
-if buttonPos is not missing value then
-    log "✓ Toolbar button found at: x=" & buttonPos's x & ", y=" & buttonPos's y
-    log "Save these coordinates for future use"
-else
-    log "✗ Calibration failed - you may need to set coordinates manually"
-    log "Try: screenCapture's setToolbarCopyButtonCoordinates(100, 30)"
-end if
-```
-
----
-
-## Your First Automation
-
-### Example 1: Initialize and Close Session
-
-The simplest automation - just connect and disconnect.
-
-```applescript
--- Save as: my_first_automation.applescript
-
--- Load the main API
-property mainAPI : load script POSIX file "/Users/okyereboateng/bobathon/src/main.applescript"
-
--- Initialize session
-log "Initializing session..."
-set result to mainAPI's initSession("A")
-
-if result's success then
-    log "✓ Session initialized successfully"
-    log "Screen type: " & result's screenType
-    
-    -- Store session for use
-    set mySession to result's session
-    
-    -- Wait a moment
-    delay 2
-    
-    -- Close session
-    log "Closing session..."
-    set closeResult to mainAPI's closeSession(mySession)
-    
-    if closeResult's success then
-        log "✓ Session closed successfully"
-    else
-        log "✗ Session close failed: " & closeResult's message
-    end if
-else
-    log "✗ Session initialization failed: " & result's message
-end if
-```
-
-**Run it:**
-```bash
-osascript my_first_automation.applescript
-```
-
----
-
-### Example 2: View a File
-
-Navigate to and view a file.
-
-```applescript
--- Save as: view_file.applescript
-
-property mainAPI : load script POSIX file "/Users/okyereboateng/bobathon/src/main.applescript"
-property logger : load script POSIX file "/Users/okyereboateng/bobathon/src/utils/logger.applescript"
-
--- Initialize logging
-logger's initializeLogging()
-
--- Initialize session
-set result to mainAPI's initSession("A")
-if not result's success then
-    log "Failed to initialize session"
-    return
-end if
-
-set mySession to result's session
-
--- Navigate to a file (change these to match your file)
-set filename to "PROFILE"
-set filetype to "EXEC"
-set filemode to "A1"
-
-log "Navigating to " & filename & " " & filetype & " " & filemode
-
-set navResult to mainAPI's navigateToFile(mySession, filename, filetype, filemode)
-
-if navResult's success then
-    log "✓ Successfully opened file in " & navResult's steps & " steps"
-    
-    -- File is now open in XEDIT
-    -- Wait to view it
-    delay 3
-    
-    -- Close the file (PF3)
-    tell application "System Events"
-        tell process "HOD"
-            key code 99  -- F3 key
-        end tell
-    end tell
-    delay 1
-else
-    log "✗ Navigation failed: " & navResult's message
-end if
-
--- Close session
-mainAPI's closeSession(mySession)
-log "Done!"
-```
-
----
-
-### Example 3: Execute a Command
-
-Execute a CMS command and see the output.
-
-```applescript
--- Save as: execute_command.applescript
-
-property mainAPI : load script POSIX file "/Users/okyereboateng/bobathon/src/main.applescript"
-
--- Initialize session
-set result to mainAPI's initSession("A")
-if not result's success then
-    log "Failed to initialize session"
-    return
-end if
-
-set mySession to result's session
-
--- Execute a command (list files)
-log "Executing LISTFILE command..."
-set cmdResult to mainAPI's executeCMSCommand(mySession, "LISTFILE * * A")
-
-if cmdResult's success then
-    log "✓ Command executed successfully"
-    log "Screen type: " & cmdResult's screenType
-    log "Output length: " & (length of cmdResult's output) & " characters"
-    
-    -- You can parse the output here
-    if cmdResult's output contains "PROFILE" then
-        log "Found PROFILE file"
-    end if
-else
-    log "✗ Command failed: " & cmdResult's message
-end if
-
--- Close session
-mainAPI's closeSession(mySession)
-```
-
----
-
-## Simple Examples
-
-### Search NETLOG
-
-```applescript
-property mainAPI : load script POSIX file "/Users/okyereboateng/bobathon/src/main.applescript"
-
--- Initialize session
-set result to mainAPI's initSession("A")
-if not result's success then return
-
-set mySession to result's session
-
--- Search for files from a specific user
-set criteria to {user:"TESTUSER"}
-
-log "Searching NETLOG..."
-set searchResult to mainAPI's searchNetlog(mySession, criteria)
-
-if searchResult's success then
-    log "✓ Found " & searchResult's totalEntries & " entries"
-    
-    -- Display first few entries
-    repeat with i from 1 to (count of searchResult's entries)
-        if i > 5 then exit repeat  -- Show first 5
-        
-        set entry to item i of searchResult's entries
-        log "Entry " & i & ": " & entry's filename & " from " & entry's fromUser
-    end repeat
-else
-    log "✗ Search failed: " & searchResult's message
-end if
-
-mainAPI's closeSession(mySession)
-```
-
----
-
-### Edit a File
-
-```applescript
-property mainAPI : load script POSIX file "/Users/okyereboateng/bobathon/src/main.applescript"
-
--- Initialize session
-set result to mainAPI's initSession("A")
-if not result's success then return
-
-set mySession to result's session
-
--- Navigate to file
-log "Opening file..."
-set navResult to mainAPI's navigateToFile(mySession, "TEST", "DATA", "A")
-
-if navResult's success then
-    -- Edit line 1
-    log "Editing line 1..."
-    set editResult to mainAPI's editFile(mySession, 1, "This is the new first line")
-    
-    if editResult's success then
-        -- Save and exit
-        log "Saving file..."
-        set saveResult to mainAPI's saveAndExit(mySession)
-        
-        if saveResult's success then
-            log "✓ File edited and saved successfully"
-        end if
-    end if
-end if
-
-mainAPI's closeSession(mySession)
-```
-
----
-
-## Testing Your Setup
-
-### Run the Test Suite
+## Create or Update a File With One Line
 
 ```bash
-# Run comprehensive tests
-osascript ~/bobathon/tests/test_suite.applescript
+./hod write-file-line "SILLY" "JOKE" "A1" "I ASKED AI FOR A PUN, AND IT SAID IT WAS STILL TRAINING ITS THOUGHT PROCESSOR."
+./hod capture
 ```
 
-### Run Individual Module Tests
+Expected result after the write: the session returns to `Ready;`.
 
-```applescript
--- Test window manager
-property windowManager : load script POSIX file "/Users/okyereboateng/bobathon/src/core/window_manager.applescript"
-windowManager's runTests()
-
--- Test clipboard manager
-property clipboardManager : load script POSIX file "/Users/okyereboateng/bobathon/src/core/clipboard_manager.applescript"
-clipboardManager's runTests()
-
--- Test keyboard controller
-property keyboardController : load script POSIX file "/Users/okyereboateng/bobathon/src/core/keyboard_controller.applescript"
-keyboardController's runTests("A")  -- Replace "A" with your session
-```
-
-### Verify Logging
+To verify the saved contents:
 
 ```bash
-# Check that logs are being created
-ls -lh ~/bobathon/logs/
-
-# View recent log entries
-tail -20 ~/bobathon/logs/hod_automation.log
-
-# Watch logs in real-time
-tail -f ~/bobathon/logs/hod_automation.log
+./hod command "XEDIT SILLY JOKE A"
+./hod capture
 ```
 
----
+## Recommended Verification Pattern
 
-## Common First-Time Issues
-
-### Issue: "Window not found"
-
-**Solution:**
-1. Verify HOD is running
-2. Check window title format matches configuration
-3. Try: `windowManager's getAllHODSessions()` to see available sessions
-
-### Issue: "Screen capture failed"
-
-**Solution:**
-1. Run calibration: `screenCapture's calibrateToolbarButton(windowRef)`
-2. Grant Accessibility permissions
-3. Ensure window is visible and not minimized
-
-### Issue: "Permission denied"
-
-**Solution:**
-1. System Preferences > Security & Privacy > Privacy > Accessibility
-2. Add Terminal or Script Editor
-3. Restart Terminal/Script Editor after granting permissions
-
-### Issue: "Module not found"
-
-**Solution:**
-1. Verify file paths in your script
-2. Use absolute paths: `/Users/okyereboateng/bobathon/src/...`
-3. Check file permissions: `ls -l ~/bobathon/src/main.applescript`
-
----
-
-## Next Steps
-
-### Learn More
-
-1. **Read the API Reference**
-   - [API_REFERENCE.md](API_REFERENCE.md)
-   - Complete function documentation
-   - Parameter details and examples
-
-2. **Study Example Workflows**
-   - `workflows/file_transfer.applescript`
-   - `workflows/batch_operations.applescript`
-   - `workflows/netlog_analysis.applescript`
-
-3. **Read the Workflow Guide**
-   - [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md)
-   - Advanced patterns
-   - Best practices
-
-4. **Review Troubleshooting**
-   - [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-   - Common issues and solutions
-   - Debug techniques
-
-### Try Advanced Features
-
-```applescript
--- Use error recovery
-property errorHandler : load script POSIX file "/Users/okyereboateng/bobathon/src/utils/error_handler.applescript"
-
-set recovery to errorHandler's handleError("capture_failure", {}, windowRef)
-if recovery's recovered then
-    log "Recovered from error"
-end if
-
--- Use decision engine
-property decisionEngine : load script POSIX file "/Users/okyereboateng/bobathon/src/engine/decision_engine.applescript"
-
-set goal to {action:"navigate_to_file", filename:"TEST", filetype:"DATA"}
-set decision to decisionEngine's makeDecision(screenData, goal)
-log "Decision: " & decision's action
-log "Reasoning: " & decision's reasoning
-
--- Use workflow executor
-property workflowExecutor : load script POSIX file "/Users/okyereboateng/bobathon/src/engine/workflow_executor.applescript"
-
-set result to workflowExecutor's executeAction(windowRef, decision, screenData)
-```
-
-### Create Your Own Workflows
-
-1. Start with a simple workflow template
-2. Add error handling
-3. Include logging
-4. Test thoroughly
-5. Document your workflow
-
-### Run the Demo
+For file operations, use this sequence:
 
 ```bash
-# See the system in action
-osascript ~/bobathon/demo.applescript
+./hod attn
+./hod capture
+./hod write-file-line "FILE" "TYPE" "A1" "YOUR TEXT HERE"
+./hod capture
+./hod command "XEDIT FILE TYPE A"
+./hod capture
 ```
 
----
+This pattern confirms:
 
-## Quick Reference Card
+- recovery worked
+- the write completed
+- the saved file opens correctly
+- the visible contents match expectation
 
-### Essential Functions
+## Useful PF Keys
 
-```applescript
--- Session Management
-initSession(sessionLetter)
-closeSession(session)
-getSessionState(session)
+Examples:
 
--- File Operations
-navigateToFile(session, filename, filetype, filemode)
-editFile(session, lineNumber, newContent)
-saveAndExit(session)
-
--- Commands
-executeCMSCommand(session, command)
-
--- Search
-searchNetlog(session, criteria)
-
--- Logging
-logger's initializeLogging()
-logger's logInfo(message, context)
-logger's logError(message, context)
+```bash
+./hod pf 3
+./hod pf 8
 ```
 
-### Common Patterns
+- [`PF3`](../hod) is commonly used to quit or back out
+- [`PF8`](../hod) is commonly used to page forward
 
-```applescript
--- Basic workflow structure
-logger's initializeLogging()
-set session to mainAPI's initSession("A")
--- Do work
-mainAPI's closeSession(session)
+The implementation now prefers real HOD toolbar buttons where available.
 
--- Error handling
-try
-    -- operations
-on error errMsg
-    logger's logError("Error: " & errMsg, missing value)
-end try
+## Common Problems
 
--- Check success
-if result's success then
-    -- continue
-else
-    log "Failed: " & result's message
-end if
+### Capture only shows footer/help keys
+
+Use [`./hod capture`](../hod) again from a stable state. The wrapper was tuned to avoid footer-only captures, but the safest pattern is still:
+
+```bash
+./hod attn
+./hod capture
 ```
 
----
+### A command opens the wrong place
 
-## Getting Help
+Recover first, then issue the command again:
 
-- **Documentation**: Check `docs/` directory
-- **Examples**: See `workflows/` directory
-- **Logs**: Review `logs/hod_automation.log`
-- **Tests**: Run `tests/test_suite.applescript`
+```bash
+./hod attn
+./hod capture
+./hod command "XEDIT FILE TYPE A"
+./hod capture
+```
 
----
+The current command path was simplified to avoid the older fragile multi-Tab placement logic.
 
-## Congratulations! 🎉
+### XEDIT refuses to quit because the file changed
 
-You're now ready to automate IBM Host On-Demand tasks. Start with simple examples and gradually build more complex workflows.
+This is handled in the recovery path. [`./hod attn`](../hod) now exits changed XEDIT screens by using the correct XEDIT quit behavior rather than pretending recovery succeeded.
 
-**Happy Automating!**
+## Files That Matter Most
 
----
+- [`hod`](../hod) — main CLI entrypoint
+- [`cli/hod.applescript`](../cli/hod.applescript) — command implementation
+- [`README.md`](../README.md) — overview
+- [`docs/TROUBLESHOOTING.md`](./TROUBLESHOOTING.md) — debugging notes
+- [`docs/API_REFERENCE.md`](./API_REFERENCE.md) — command details
 
-**Made with Bob** 🤖
+## One Good End-to-End Example
+
+```bash
+./hod attn
+./hod capture
+./hod write-file-line "TELL" "PUNN" "A1" "AI TRIED STAND-UP, BUT EVERY JOKE NEEDED A LITTLE MORE HUMAN TRAINING DATA."
+./hod capture
+./hod command "XEDIT TELL PUNN A"
+./hod capture
+```
+
+That sequence creates or updates the file, files the changes, and verifies the resulting XEDIT screen from terminal output.
