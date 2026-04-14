@@ -2,4 +2,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-osascript "$SCRIPT_DIR/cli/hod.applescript" "$@"
+
+if [[ "${1:-}" == "capture" ]]; then
+  osascript "$SCRIPT_DIR/cli/hod.applescript" activate A >/dev/null
+  printf '' | pbcopy
+  osascript -e 'tell application "System Events" to keystroke "c" using control down'
+  sleep 1
+  pbpaste
+else
+  osascript "$SCRIPT_DIR/cli/hod.applescript" "$@"
+fi

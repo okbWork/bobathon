@@ -1,3 +1,5 @@
+property lastRecoveryWasAttn : false
+
 on run argv
 	if (count of argv) is 0 then
 		return "ERROR: Missing command"
@@ -34,13 +36,13 @@ on run argv
 	else if actionName is "pagedown" then
 		return my pressPF("8")
 	else if actionName is "capture" then
-		set processName to my getHODProcessName()
-		do shell script "printf '' | pbcopy"
-		tell application "System Events"
-			set frontmost of process processName to true
-		end tell
-		delay 0.2
-		return do shell script "osascript -e 'tell application \"System Events\" to keystroke \"c\" using control down' && sleep 1 && pbpaste"
+		set screenText to ""
+		repeat 3 times
+			set screenText to my captureViaRawProbe()
+			if my isBadScreenProbe(screenText) is false then return screenText
+			delay 0.5
+		end repeat
+		return "ERROR: capture failed" & return & screenText
 	else if actionName is "command" then
 		if (count of argv) < 2 then return "ERROR: command requires text"
 		return my sendCommand(item 2 of argv)
@@ -165,9 +167,12 @@ end pressKeyCode
 
 on pressClear()
 	try
-		tell application "System Events"
-			key code 51 using command down
-		end tell
+		set clickResult to my clickNamedButton("A", "Clear")
+		if clickResult is false then
+			tell application "System Events"
+				key code 51 using command down
+			end tell
+		end if
 		delay 0.8
 		return "OK: pressed CLEAR"
 	on error errMsg
@@ -177,23 +182,35 @@ end pressClear
 
 on pressAttn()
 	try
-		tell application "System Events"
-			keystroke "c" using control down
-		end tell
-		delay 1.0
+		set activateResult to my activateSession("A")
+		if activateResult does not start with "OK:" then return activateResult
 		
-		tell application "System Events"
-			key code 99
-		end tell
-		delay 1.0
+		set lastRecoveryWasAttn to false
 		
-		tell application "System Events"
-			key code 36
-		end tell
-		delay 1.0
+		set pf3Result to my pressPF("3")
+		if pf3Result does not start with "OK:" then return pf3Result
 		
-		return "OK: pressed ATTN"
+		set screenText to my captureViaRawProbe()
+		if screenText contains "type QQUIT to quit anyway" then
+			set qquitResult to my forceQuitChangedXedit()
+			if qquitResult does not start with "OK:" then return qquitResult
+			delay 1.0
+			set screenText to my captureViaRawProbe()
+		end if
+		
+		if screenText contains "Ready;" or screenText contains "VM READ" then
+			set lastRecoveryWasAttn to true
+			return "OK: pressed ATTN"
+		end if
+		
+		if screenText contains "====>" and screenText does not contain "XEDIT * * * Top of File * * *" then
+			set lastRecoveryWasAttn to true
+			return "OK: pressed ATTN"
+		end if
+		
+		return "ERROR: ATTN recovery not confirmed"
 	on error errMsg
+		set lastRecoveryWasAttn to false
 		return "ERROR: " & errMsg
 	end try
 end pressAttn
@@ -219,37 +236,42 @@ end resetHoldingState
 on pressPF(keyNumberText)
 	try
 		set keyNumber to keyNumberText as integer
-		if keyNumber is 1 then
-			set keyCodeValue to 122
-		else if keyNumber is 2 then
-			set keyCodeValue to 120
-		else if keyNumber is 3 then
-			set keyCodeValue to 99
-		else if keyNumber is 4 then
-			set keyCodeValue to 118
-		else if keyNumber is 5 then
-			set keyCodeValue to 96
-		else if keyNumber is 6 then
-			set keyCodeValue to 97
-		else if keyNumber is 7 then
-			set keyCodeValue to 98
-		else if keyNumber is 8 then
-			set keyCodeValue to 100
-		else if keyNumber is 9 then
-			set keyCodeValue to 101
-		else if keyNumber is 10 then
-			set keyCodeValue to 109
-		else if keyNumber is 11 then
-			set keyCodeValue to 103
-		else if keyNumber is 12 then
-			set keyCodeValue to 111
-		else
-			error "PF key must be 1-12"
+		if keyNumber is less than 1 or keyNumber is greater than 12 then error "PF key must be 1-12"
+		
+		set buttonName to "PF" & keyNumber
+		set clicked to my clickNamedButton("A", buttonName)
+		if clicked is false then
+			if keyNumber is 1 then
+				set keyCodeValue to 122
+			else if keyNumber is 2 then
+				set keyCodeValue to 120
+			else if keyNumber is 3 then
+				set keyCodeValue to 99
+			else if keyNumber is 4 then
+				set keyCodeValue to 118
+			else if keyNumber is 5 then
+				set keyCodeValue to 96
+			else if keyNumber is 6 then
+				set keyCodeValue to 97
+			else if keyNumber is 7 then
+				set keyCodeValue to 98
+			else if keyNumber is 8 then
+				set keyCodeValue to 100
+			else if keyNumber is 9 then
+				set keyCodeValue to 101
+			else if keyNumber is 10 then
+				set keyCodeValue to 109
+			else if keyNumber is 11 then
+				set keyCodeValue to 103
+			else if keyNumber is 12 then
+				set keyCodeValue to 111
+			end if
+			
+			tell application "System Events"
+				key code keyCodeValue
+			end tell
 		end if
 		
-		tell application "System Events"
-			key code keyCodeValue
-		end tell
 		delay 1.0
 		return "OK: pressed PF" & keyNumber
 	on error errMsg
@@ -261,42 +283,167 @@ on sendCommand(theText)
 	set activateResult to my activateSession("A")
 	if activateResult does not start with "OK:" then return activateResult
 	
+	set beforeScreen to my captureViaRawProbe()
+	set commandResult to my sendCommandSafely(theText, beforeScreen)
+	set lastRecoveryWasAttn to false
+	return commandResult
+end sendCommand
+
+on sendCommandAfterAttn(theText, beforeScreen)
+	set commandResult to my sendCommandSafely(theText, beforeScreen)
+	set lastRecoveryWasAttn to false
+	return commandResult
+end sendCommandAfterAttn
+
+on sendCommandSafely(theText, beforeScreen)
 	try
-		tell application "System Events"
-			key code 53
-		end tell
+		my clickTerminalBody("A")
 		delay 0.2
 	end try
 	
-	try
-		tell application "System Events"
-			key code 51 using command down
-		end tell
-		delay 0.3
-	end try
-	
-	repeat 2 times
-		tell application "System Events"
-			key code 48
-		end tell
-		delay 0.2
-	end repeat
-	
-	try
-		tell application "System Events"
-			key code 51 using command down
-		end tell
-		delay 0.3
-	end try
+	set clearResult to my pressClear()
+	if clearResult does not start with "OK:" then return clearResult
 	
 	set typeResult to my typeTextCommand(theText)
 	if typeResult does not start with "OK:" then return typeResult
 	
-	set enterResult to my pressKeyCode(36, 1.2, "ENTER")
-	if enterResult does not start with "OK:" then return enterResult
+	set enterClicked to my clickNamedButton("A", "Enter")
+	if enterClicked is false then
+		set enterResult to my pressKeyCode(36, 1.2, "ENTER")
+		if enterResult does not start with "OK:" then return enterResult
+	else
+		delay 1.2
+	end if
+	
+	return my verifyCommandEffect(theText, beforeScreen)
+end sendCommandSafely
+
+on forceQuitChangedXedit()
+	try
+		set clearResult to my pressClear()
+		if clearResult does not start with "OK:" then return clearResult
+		
+		set typeResult to my typeTextCommand("QQUIT")
+		if typeResult does not start with "OK:" then return typeResult
+		
+		set enterClicked to my clickNamedButton("A", "Enter")
+		if enterClicked is false then
+			set enterResult to my pressKeyCode(36, 1.2, "ENTER")
+			if enterResult does not start with "OK:" then return enterResult
+		else
+			delay 1.2
+		end if
+		
+		return "OK: force quit changed xedit"
+	on error errMsg
+		return "ERROR: " & errMsg
+	end try
+end forceQuitChangedXedit
+
+on verifyCommandEffect(theText, beforeScreen)
+	delay 1.0
+	
+	set afterScreen to my captureViaRawProbe()
+	if my isBadScreenProbe(afterScreen) then return "ERROR: command result could not be confirmed for " & theText
+	
+	if (length of theText) ≥ 6 and (text 1 thru 6 of theText) is "XEDIT " then
+		set requestedTarget to my extractRequestedXeditTarget(theText)
+		set resultingTarget to my extractXeditHeaderTarget(afterScreen)
+		
+		if requestedTarget is not "" and resultingTarget is not "" then
+			set requestedTargetNormalized to my normalizeXeditTarget(requestedTarget)
+			set resultingTargetNormalized to my normalizeXeditTarget(resultingTarget)
+			
+			if requestedTargetNormalized is not resultingTargetNormalized then
+				return "ERROR: command drifted; requested " & requestedTarget & " but screen shows " & resultingTarget
+			end if
+		end if
+		
+		set beforeTarget to my extractXeditHeaderTarget(beforeScreen)
+		if requestedTarget is not "" and beforeTarget is not "" then
+			if my normalizeXeditTarget(requestedTarget) is my normalizeXeditTarget(beforeTarget) then
+				return "OK: command " & theText
+			end if
+		end if
+		
+		if requestedTarget is not "" and resultingTarget is not "" then
+			if my normalizeXeditTarget(requestedTarget) is my normalizeXeditTarget(resultingTarget) then
+				return "OK: command " & theText
+			end if
+		end if
+	end if
 	
 	return "OK: command " & theText
-end sendCommand
+end verifyCommandEffect
+
+on extractRequestedXeditTarget(theText)
+	try
+		set parts to words of theText
+		if (count of parts) ≥ 4 then
+			return (item 2 of parts) & " " & (item 3 of parts) & " " & (item 4 of parts)
+		end if
+	on error
+	end try
+	return ""
+end extractRequestedXeditTarget
+
+on extractXeditHeaderTarget(screenText)
+	try
+		set normalizedText to do shell script "printf %s " & quoted form of screenText & " | tr '\\r' '\\n'"
+		set firstLine to paragraph 1 of normalizedText
+		set headerWords to words of firstLine
+		if (count of headerWords) ≥ 3 then
+			return (item 1 of headerWords) & " " & (item 2 of headerWords) & " " & (item 3 of headerWords)
+		end if
+	on error
+	end try
+	return ""
+end extractXeditHeaderTarget
+
+on normalizeXeditTarget(targetText)
+	try
+		set parts to words of targetText
+		if (count of parts) is 3 then
+			set fileName to item 1 of parts
+			set fileType to item 2 of parts
+			set fileMode to item 3 of parts
+			if fileMode is "A1" then set fileMode to "A"
+			return fileName & " " & fileType & " " & fileMode
+		end if
+	on error
+	end try
+	return targetText
+end normalizeXeditTarget
+
+on captureViaRawProbe()
+	set processName to my getHODProcessName()
+	do shell script "printf '' | pbcopy"
+	tell application "System Events"
+		set frontmost of process processName to true
+	end tell
+	delay 0.2
+	return do shell script "osascript -e 'tell application \"System Events\" to keystroke \"c\" using control down' && sleep 1 && pbpaste"
+end captureViaRawProbe
+
+on isBadScreenProbe(screenText)
+	if screenText is "" then return true
+	if my looksLikeFooterOnlyCapture(screenText) then return true
+	if screenText contains "Ready;" or screenText contains "VM READ" then return false
+	if screenText contains "====>" then
+		set xeditHeaderTarget to my extractXeditHeaderTarget(screenText)
+		if xeditHeaderTarget is not "" then return false
+		if screenText contains "XEDIT" then return false
+	end if
+	return true
+end isBadScreenProbe
+
+on looksLikeFooterOnlyCapture(screenText)
+	if screenText does not contain "1=Hlp 2=Add 3=Quit" then return false
+	if screenText contains "====>" then return false
+	if screenText contains "Ready;" then return false
+	if my extractXeditHeaderTarget(screenText) is not "" then return false
+	return true
+end looksLikeFooterOnlyCapture
 
 on readFileInXedit(fileName, fileType, fileMode)
 	set openResult to my sendCommand("XEDIT " & fileName & " " & fileType & " " & fileMode)
@@ -496,18 +643,31 @@ on clickTerminalBody(sessionLetter)
 		tell application "System Events"
 			set targetWindow to my findSessionWindow(sessionLetter)
 			set winPosition to position of targetWindow
-			set winSize to size of targetWindow
+			tell targetWindow
+				set terminalArea to first scroll area
+				set areaPosition to position of terminalArea
+				set areaSize to size of terminalArea
+			end tell
 		end tell
 		
-		set baseX to item 1 of winPosition
-		set baseY to item 2 of winPosition
+		set windowX to item 1 of winPosition
+		set windowY to item 2 of winPosition
+		set areaX to item 1 of areaPosition
+		set areaY to item 2 of areaPosition
+		set areaWidth to item 1 of areaSize
+		set areaHeight to item 2 of areaSize
 		
-		my clickAtPoint(baseX + 90, baseY + 145)
-		delay 0.1
-		my clickAtPoint(baseX + 140, baseY + 180)
-		delay 0.1
-		my clickAtPoint(baseX + 220, baseY + 220)
-		delay 0.1
+		set centerX to windowX + areaX + (areaWidth div 2)
+		set upperBodyY to windowY + areaY + 40
+		set centerBodyY to windowY + areaY + (areaHeight div 2)
+		set lowerBodyY to windowY + areaY + areaHeight - 40
+		
+		my clickAtPoint(centerX, upperBodyY)
+		delay 0.15
+		my clickAtPoint(centerX, centerBodyY)
+		delay 0.15
+		my clickAtPoint(centerX, lowerBodyY)
+		delay 0.15
 		
 		return true
 	on error
@@ -518,5 +678,20 @@ end clickTerminalBody
 on clickAtPoint(clickX, clickY)
 	do shell script "/usr/bin/python3 - <<'PY'\nfrom Quartz.CoreGraphics import CGEventCreateMouseEvent, CGEventPost, kCGHIDEventTap, kCGEventMouseMoved, kCGEventLeftMouseDown, kCGEventLeftMouseUp\nx = " & clickX & "\ny = " & clickY & "\nfor event_type in (kCGEventMouseMoved, kCGEventLeftMouseDown, kCGEventLeftMouseUp):\n    event = CGEventCreateMouseEvent(None, event_type, (x, y), 0)\n    CGEventPost(kCGHIDEventTap, event)\nPY"
 end clickAtPoint
+
+on clickNamedButton(sessionLetter, buttonName)
+	try
+		tell application "System Events"
+			set targetWindow to my findSessionWindow(sessionLetter)
+			tell targetWindow
+				click first button whose name is buttonName
+			end tell
+		end tell
+		delay 0.2
+		return true
+	on error
+		return false
+	end try
+end clickNamedButton
 
 -- Made with Bob
