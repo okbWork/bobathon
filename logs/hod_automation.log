@@ -1,0 +1,107 @@
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:22:02 AM ===
+2026-04-14 11:22:02 [INFO] Test suite started
+2026-04-14 11:22:02 [ERROR] Test suite fatal error: The variable testGetAllSessions is not defined. | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:25:45 AM ===
+2026-04-14 11:25:45 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:25:45 AM ===
+2026-04-14 11:25:45 [ERROR] Session initialization failed: «script» doesn’t understand the “getHODWindow” message. | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:26:20 AM ===
+2026-04-14 11:26:20 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:26:20 AM ===
+2026-04-14 11:26:25 [ERROR] Failed to get HOD window | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:27:39 AM ===
+2026-04-14 11:27:39 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:27:39 AM ===
+2026-04-14 11:27:43 [ERROR] Failed to get HOD window | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:29:47 AM ===
+2026-04-14 11:29:47 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:29:47 AM ===
+2026-04-14 11:29:52 [ERROR] Failed to get HOD window | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:30:45 AM ===
+2026-04-14 11:30:45 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:30:45 AM ===
+2026-04-14 11:30:48 [ERROR] Session initialization failed: Can’t make success of missing value into type boolean. | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:31:47 AM ===
+2026-04-14 11:31:47 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:31:47 AM ===
+2026-04-14 11:31:51 [ERROR] Failed to get HOD window | Context: {}
+2026-04-14 11:32:00 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:32:00 AM ===
+2026-04-14 11:32:03 [ERROR] Failed to get HOD window | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:39:31 AM ===
+2026-04-14 11:39:31 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:39:31 AM ===
+2026-04-14 11:39:55 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:45:25 AM ===
+2026-04-14 11:45:25 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:45:25 AM ===
+2026-04-14 11:45:51 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:46:30 AM ===
+2026-04-14 11:46:30 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:46:30 AM ===
+2026-04-14 11:46:55 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:49:11 AM ===
+2026-04-14 11:49:11 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:49:11 AM ===
+2026-04-14 11:49:36 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:09 AM ===
+2026-04-14 11:52:09 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:09 AM ===
+2026-04-14 11:52:16 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:29 AM ===
+2026-04-14 11:52:29 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:29 AM ===
+2026-04-14 11:52:34 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:44 AM ===
+2026-04-14 11:52:44 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:44 AM ===
+2026-04-14 11:52:44 [ERROR] Failed to get HOD window | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:59 AM ===
+2026-04-14 11:52:59 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:52:59 AM ===
+2026-04-14 11:53:01 [ERROR] Failed to get HOD window | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:53:13 AM ===
+2026-04-14 11:53:13 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:53:13 AM ===
+2026-04-14 11:53:13 [ERROR] Failed to get HOD window | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:53:34 AM ===
+2026-04-14 11:53:34 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:53:34 AM ===
+2026-04-14 11:53:36 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:53:52 AM ===
+2026-04-14 11:53:52 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:53:52 AM ===
+2026-04-14 11:53:55 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:58:37 AM ===
+2026-04-14 11:58:37 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:58:37 AM ===
+2026-04-14 11:58:40 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:58:51 AM ===
+2026-04-14 11:58:51 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:58:51 AM ===
+2026-04-14 11:58:53 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:59:04 AM ===
+2026-04-14 11:59:04 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:59:04 AM ===
+2026-04-14 11:59:06 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:59:22 AM ===
+2026-04-14 11:59:22 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 11:59:22 AM ===
+2026-04-14 11:59:24 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 12:02:37 PM ===
+2026-04-14 12:02:37 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 12:02:37 PM ===
+2026-04-14 12:02:39 [ERROR] Failed to capture initial screen | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 12:02:53 PM ===
+2026-04-14 12:02:53 [INFO] Initializing session A
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 12:02:53 PM ===
+2026-04-14 12:02:55 [ERROR] Timing log failed: Can’t make seconds into type number, date or text. | Context: {}
+2026-04-14 12:02:55 [INFO] Session initialized successfully | Context: {}
+2026-04-14 12:02:55 [INFO] Closing session A
+2026-04-14 12:02:56 [ERROR] Session close failed: Can’t make window "GDLVM7 - A" of «class pcap» "IBM Host On-Demand.app" of application "System Events" into the expected type. | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 12:03:06 PM ===
+2026-04-14 12:03:06 [INFO] Test suite started
+2026-04-14 12:03:06 [ERROR] Test suite fatal error: The variable testGetAllSessions is not defined. | Context: {}
+=== NEW SESSION STARTED: Tuesday, April 14, 2026 at 12:03:49 PM ===
+2026-04-14 12:03:49 [INFO] Test suite started
+2026-04-14 12:03:50 [ERROR] Test suite fatal error: The variable testClearClipboard is not defined. | Context: {}
